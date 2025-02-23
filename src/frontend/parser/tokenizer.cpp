@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "tokenizer.h"
 
 #include <fstream>
 #include <stack>
@@ -21,7 +21,7 @@ namespace frontend::parser {
         VERBATIM,
     };
 
-    std::vector<token> parser::tokenize_fully(const driver::compile_context &ctx) {
+    std::vector<token> tokenizer::tokenize_fully(const driver::compile_context &ctx) {
         using namespace token_;
         using namespace ice;
 
@@ -35,6 +35,7 @@ namespace frontend::parser {
             "namespace",
             "fn",
             "class",
+            "struct",
             "let",
             "if",
             "else",
@@ -69,6 +70,24 @@ namespace frontend::parser {
             "operator", // reserved for operator overloading
             "uncounted", // reserved to mark a struct/class as non ref-counted, better ABI match with c/c++.
             "weak", // lets the compiler know to not
+        };
+
+        std::unordered_set symbols {
+            '!',
+            '~',
+            '%',
+            '^',
+            '&',
+            '*',
+            '-',
+            '+',
+            '=',
+            '|',
+            ',',
+            ';',
+            ':',
+            '/',
+            '?',
         };
 
         int cur = '\0';
@@ -141,9 +160,10 @@ namespace frontend::parser {
                 if (std::isalnum(cur)) {
                     scratch += filebuffer.get();
                     continue;
-                } else {
-
                 }
+
+                tokenstream.emplace_back(token::NUM, token_number{scratch});
+                state = tokenizer_state::DEFAULT;
             }
 
             if (cur == '\n') {
@@ -229,13 +249,105 @@ namespace frontend::parser {
                     filebuffer.ignore();
 
                 tokenstream.emplace_back(token::WS, std::monostate{});
+                continue;
             }
+
+            if (symbols.contains(cur)) {
+                filebuffer.ignore();
+                switch (cur) {
+                    case '!':
+                        tokenstream.emplace_back(token::BANG, std::monostate{});
+                        break;
+                    case '~':
+                        tokenstream.emplace_back(token::TILDE, std::monostate{});
+                        break;
+                    case '%':
+                        tokenstream.emplace_back(token::PERCENT, std::monostate{});
+                        break;
+                    case '^':
+                        tokenstream.emplace_back(token::HAT, std::monostate{});
+                        break;
+                    case '&':
+                        tokenstream.emplace_back(token::AMPERSAND, std::monostate{});
+                        break;
+                    case '*':
+                        tokenstream.emplace_back(token::STAR, std::monostate{});
+                        break;
+                    case '-':
+                        tokenstream.emplace_back(token::DASH, std::monostate{});
+                        break;
+                    case '+':
+                        tokenstream.emplace_back(token::PLUS, std::monostate{});
+                        break;
+                    case '=':
+                        tokenstream.emplace_back(token::EQ, std::monostate{});
+                        break;
+                    case '|':
+                        tokenstream.emplace_back(token::PIPE, std::monostate{});
+                        break;
+                    case ',':
+                        tokenstream.emplace_back(token::COMMA, std::monostate{});
+                        break;
+                    case ';':
+                        tokenstream.emplace_back(token::SEMICOLON, std::monostate{});
+                        break;
+                    case ':':
+                        tokenstream.emplace_back(token::COLON, std::monostate{});
+                        break;
+                    case '/':
+                        tokenstream.emplace_back(token::SLASH, std::monostate{});
+                        break;
+                    case '?':
+                        tokenstream.emplace_back(token::QUESTION, std::monostate{});
+                        break;
+                    default:
+                        unreachable(std::string("unhandled symbol ") + (char)cur);
+                }
+                continue;
+            }
+
+            if (cur == '(' || cur == ')' || cur == '[' || cur == ']' || cur == '{' || cur == '}' || cur == '<' || cur == '>') {
+                filebuffer.ignore();
+                switch (cur) {
+                    case '(':
+                        tokenstream.emplace_back(token::PAREN_OPEN, std::monostate{});
+                        break;
+                    case ')':
+                        tokenstream.emplace_back(token::PAREN_CLOSE, std::monostate{});
+                        break;
+                    case '[':
+                        tokenstream.emplace_back(token::SQUARE_OPEN, std::monostate{});
+                        break;
+                    case ']':
+                        tokenstream.emplace_back(token::SQUARE_CLOSE, std::monostate{});
+                        break;
+                    case '{':
+                        tokenstream.emplace_back(token::SCOPE_OPEN, std::monostate{});
+                        break;
+                    case '}':
+                        tokenstream.emplace_back(token::SCOPE_CLOSE, std::monostate{});
+                        break;
+                    case '<':
+                        tokenstream.emplace_back(token::ANGLE_OPEN, std::monostate{});
+                        break;
+                    case '>':
+                        tokenstream.emplace_back(token::ANGLE_CLOSE, std::monostate{});
+                        break;
+                    default:
+                        unreachable(std::string("unhandled special ") + (char)cur);
+                }
+                continue;
+            }
+
+            // unrecognized token
+            tokenstream.emplace_back(token::UNKNOWN, token_unknown{cur});
+            filebuffer.ignore();
         }
 
         return tokenstream;
     }
 
-    void parser::load(const driver::compile_context &ctx) {
+    void tokenizer::load(const driver::compile_context &ctx) {
         std::fstream file(ctx.main_file);
 
         filebuffer << file.rdbuf();

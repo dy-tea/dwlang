@@ -25,13 +25,15 @@ namespace frontend::parser {
         };
 
         struct token_number {
-            std::string prefix;
             std::string data;
-            std::string suffix;
         };
 
         struct token_verbatim {
             std::string data;
+        };
+
+        struct token_unknown {
+            int data;
         };
     }
 
@@ -55,11 +57,30 @@ namespace frontend::parser {
             SQUARE_CLOSE,
             ANGLE_OPEN,
             ANGLE_CLOSE,
+
+            // operators
+            BANG,
+            TILDE,
+            PERCENT,
+            HAT,
+            AMPERSAND,
+            STAR,
+            DASH,
+            PLUS,
+            EQ,
+            PIPE,
+            COMMA,
+            SEMICOLON,
+            COLON,
+            SLASH,
+            QUESTION,
+
+            UNKNOWN,
         } type;
 
-        std::variant<std::monostate, // provided for symbols who don't need data.
+        std::variant<std::monostate, // provided for tokens who don't need data.
                      token_::token_string, token_::token_line, token_::token_comment, token_::token_keyword,
-                     token_::token_ident, token_::token_number, token_::token_verbatim> value;
+                     token_::token_ident, token_::token_number, token_::token_verbatim, token_::token_unknown> value;
 
         [[nodiscard]] std::string to_string() const;
     };

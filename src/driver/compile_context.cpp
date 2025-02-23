@@ -2,11 +2,11 @@
 
 #include <iostream>
 
-#include "frontend/parser/parser.h"
+#include "frontend/parser/tokenizer.h"
 
 namespace driver {
     int compile_context::compile() {
-        frontend::parser::parser p;
+        frontend::parser::tokenizer p;
 
         auto tokens = p.tokenize_fully(*this);
 

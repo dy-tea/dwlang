@@ -10,7 +10,7 @@ namespace driver {
 }
 
 namespace frontend::parser {
-    class parser {
+    class tokenizer {
         std::stringstream filebuffer;
 
     public:

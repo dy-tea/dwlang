@@ -8,8 +8,8 @@ add_executable(dcc
         src/driver/main.cpp
         src/driver/compile_context.cpp
         src/driver/compile_context.h
-        src/frontend/parser/parser.cpp
-        src/frontend/parser/parser.h
+        src/frontend/parser/tokenizer.cpp
+        src/frontend/parser/tokenizer.h
         src/frontend/parser/token.h
         src/frontend/parser/token.cpp
         src/common/utilities.h
